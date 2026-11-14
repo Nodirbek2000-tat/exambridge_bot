@@ -154,5 +154,10 @@ async def delete_channel(chat_id):
     return await _request('DELETE', f'channels/{chat_id}/')
 
 
+async def user_ids(audience='all'):
+    """/admin xabar tarqatish uchun: {'ids': [...], 'counts': {'all', 'premium', 'free'}}."""
+    return await _request('GET', f'users/ids/?audience={audience}')
+
+
 async def stats():
     return await _request('GET', 'stats/')

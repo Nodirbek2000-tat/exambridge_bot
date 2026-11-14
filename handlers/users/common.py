@@ -1,4 +1,6 @@
 """Foydalanuvchi bo'limlari uchun umumiy yordamchilar."""
+import math
+from datetime import datetime
 from html import escape
 
 from aiogram import types
@@ -26,8 +28,33 @@ def is_admin(user_id):
     return user_id in ADMINS
 
 
+# Saytdan kelgan oxirgi akkaunt ma'lumoti (telegram_id -> account). Menyuda Premium
+# holatini ko'rsatish uchun; har bir sync bilan yangilanadi.
+_accounts = {}
+
+
+def remember(account):
+    if account and account.get('telegram_id'):
+        _accounts[account['telegram_id']] = account
+    return account
+
+
 def menu_for(user_id):
-    return main_menu(is_admin=is_admin(user_id))
+    account = _accounts.get(user_id)
+    return main_menu(is_admin=is_admin(user_id), premium=bool(account and account.get('is_premium')))
+
+
+def premium_until_text(account):
+    """'13.12.2026 gacha (29 kun qoldi)' yoki 'muddatsiz'."""
+    iso = account.get('premium_until')
+    if not iso:
+        return 'muddatsiz'
+    try:
+        until = datetime.fromisoformat(iso)
+    except ValueError:
+        return iso[:10]
+    days = max(0, math.ceil((until - datetime.now(until.tzinfo)).total_seconds() / 86400))
+    return f"{until:%d.%m.%Y} gacha ({days} kun qoldi)"
 
 
 async def account_or_prompt(message: types.Message):
@@ -40,7 +67,7 @@ async def account_or_prompt(message: types.Message):
     if not data.get('registered'):
         await message.answer(REGISTER_TEXT, reply_markup=contact_keyboard())
         return None
-    return data['account']
+    return remember(data['account'])
 
 
 def account_text(account):
@@ -51,16 +78,21 @@ def account_text(account):
     if account.get('phone'):
         lines.append(f"Telefon: {escape(account['phone'])}")
     if account.get('is_premium'):
-        until = account.get('premium_until')
-        until = f"{until[8:10]}.{until[5:7]}.{until[0:4]}" if until else 'muddatsiz'
-        lines.append(f"Tarif: 💎 <b>Premium</b> — {until} gacha")
+        lines.append(f"Tarif: 💎 <b>Premium</b> — {premium_until_text(account)}")
     else:
         lines.append("Tarif: Bepul")
     return '\n'.join(lines)
 
 
-async def send_plans(message: types.Message):
-    """Tariflar ro'yxati va tanlash tugmalari."""
+async def send_plans(message: types.Message, account=None):
+    """Tariflar ro'yxati va tanlash tugmalari. Premium bo'lsa — avval uning holati."""
+    account = account or _accounts.get(message.chat.id)
+    if account and account.get('is_premium') and not account.get('premium_until'):
+        await message.answer(
+            "✅ <b>Sizda muddatsiz Premium bor</b> — hamma narsa ochiq, to'lov shart emas.",
+            reply_markup=menu_for(message.chat.id),
+        )
+        return
     try:
         data = await api.plans()
     except api.ApiError:
@@ -74,8 +106,16 @@ async def send_plans(message: types.Message):
         return
     plans = data['plans']
     rows = '\n'.join(f"• <b>{plan_title(p['months'])}</b> — {money(p['price'])} so'm" for p in plans)
+    if account and account.get('is_premium'):
+        header = (
+            f"✅ <b>Sizda Premium faol</b> — {premium_until_text(account)}.\n\n"
+            "Muddatni uzaytirish uchun tarif tanlang — yangi kunlar hozirgisining ustiga qo'shiladi.\n\n"
+        )
+    else:
+        header = ""
     text = (
-        "💎 <b>ExamBridge Premium</b>\n\n"
+        header
+        + "💎 <b>ExamBridge Premium</b>\n\n"
         "Premium bilan ochiladi:\n"
         "• barcha IELTS, CEFR va SAT premium mock testlari\n"
         "• Speaking va Writing — AI band bahosi bilan\n"

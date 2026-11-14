@@ -58,7 +58,8 @@ def reject_reasons_keyboard(payment_id):
 def admin_keyboard():
     return InlineKeyboardMarkup(row_width=1).add(
         InlineKeyboardButton('🔄 Yangilash', callback_data='adm:stats'),
-        InlineKeyboardButton('📢 Majburiy kanallar', callback_data='adm:channels'),
+        InlineKeyboardButton('📢 Xabar yuborish', callback_data='adm:bcast'),
+        InlineKeyboardButton('📌 Majburiy kanallar', callback_data='adm:channels'),
     )
 
 

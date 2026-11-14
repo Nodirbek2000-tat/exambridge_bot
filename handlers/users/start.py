@@ -12,7 +12,7 @@ from loader import dp
 from utils import api
 from utils.subscription import missing_channels
 
-from .common import REGISTER_TEXT, SERVER_ERROR, menu_for, send_plans
+from .common import REGISTER_TEXT, SERVER_ERROR, menu_for, remember, send_plans
 
 REGISTER_FOR_LOGIN = (
     "👋 <b>ExamBridge'ga xush kelibsiz!</b>\n\n"
@@ -76,6 +76,7 @@ async def run_start(message: types.Message, user: types.User, args: str, state: 
                 await message.answer(SERVER_ERROR)
                 return
         else:
+            remember(data['account'])
             who = data['account'].get('email') or data['account'].get('full_name')
             await message.answer(
                 f"✅ Telegram saytdagi <b>{escape(who or '')}</b> akkauntiga ulandi.",
@@ -95,6 +96,7 @@ async def run_start(message: types.Message, user: types.User, args: str, state: 
         await message.answer(REGISTER_TEXT, reply_markup=contact_keyboard())
         return
 
+    remember(data['account'])
     name = escape(user.first_name or data['account'].get('full_name') or '')
     await message.answer(
         f"👋 Xush kelibsiz, <b>{name}</b>!\nKerakli bo'limni tanlang 👇",
@@ -178,6 +180,7 @@ async def got_contact(message: types.Message, state: FSMContext):
         await message.answer(SERVER_ERROR)
         return
 
+    remember(data.get('account'))
     state_data = await state.get_data()
     await state.finish()
     after = state_data.get('after_register') or ''

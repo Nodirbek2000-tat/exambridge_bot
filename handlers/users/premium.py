@@ -6,7 +6,7 @@ from aiogram import types
 from aiogram.dispatcher import FSMContext
 
 from data.config import ADMINS, SUPPORT_USERNAME
-from keyboards.default.menu import BTN_CANCEL, BTN_PREMIUM, cancel_keyboard
+from keyboards.default.menu import BTN_CANCEL, BTN_PREMIUM, BTN_PREMIUM_ACTIVE, cancel_keyboard
 from keyboards.inline.buttons import decision_keyboard, money, plan_title
 from loader import dp
 from states.forms import PaymentForm
@@ -21,12 +21,13 @@ DOC_TYPES = {
 }
 
 
-@dp.message_handler(text=BTN_PREMIUM)
+@dp.message_handler(text=[BTN_PREMIUM, BTN_PREMIUM_ACTIVE])
 @dp.message_handler(commands=['premium'])
 async def premium_menu(message: types.Message):
-    if await account_or_prompt(message) is None:
+    account = await account_or_prompt(message)
+    if account is None:
         return
-    await send_plans(message)
+    await send_plans(message, account)
 
 
 @dp.callback_query_handler(text_startswith='plan:', state='*')

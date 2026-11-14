@@ -7,3 +7,5 @@ class PaymentForm(StatesGroup):
 
 class AdminForm(StatesGroup):
     channel = State()      # yangi majburiy kanal kutilmoqda
+    broadcast = State()          # tarqatiladigan xabar kutilmoqda
+    broadcast_confirm = State()  # kimga yuborish tanlanmoqda
