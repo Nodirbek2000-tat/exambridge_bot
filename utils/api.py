@@ -98,6 +98,13 @@ async def link(user, token):
     return await _request('POST', 'users/link/', json={**_profile(user), 'token': token})
 
 
+async def confirm_login(user, token, signed_up=False):
+    """Saytdagi «Continue with Telegram» so'rovini tasdiqlash."""
+    return await _request('POST', 'users/login-confirm/', json={
+        'telegram_id': user.id, 'token': token, 'signed_up': signed_up,
+    })
+
+
 async def login_link(telegram_id):
     return await _request('POST', 'users/login-link/', json={'telegram_id': telegram_id})
 
