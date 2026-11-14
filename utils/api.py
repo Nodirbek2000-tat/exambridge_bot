@@ -109,10 +109,21 @@ async def login_link(telegram_id):
     return await _request('POST', 'users/login-link/', json={'telegram_id': telegram_id})
 
 
+async def pay_check(user, token):
+    """Saytdagi «Pay via Telegram»: to'lov qaysi akkaunt uchun ekanini bilish (hech narsa o'zgarmaydi)."""
+    return await _request('POST', 'users/pay-check/', json={**_profile(user), 'token': token})
+
+
+async def pay_confirm(user, token):
+    """O'quvchi akkauntni tasdiqladi: keyingi cheklar shu akkauntga yoziladi."""
+    return await _request('POST', 'users/pay-confirm/', json={**_profile(user), 'token': token})
+
+
 # ── Payments ──────────────────────────────────────────────────────────────────
 
-async def plans():
-    return await _request('GET', 'plans/')
+async def plans(telegram_id=None):
+    """Tariflar va karta. telegram_id bilan — Premium qaysi akkauntga ochilishi ham (for_account)."""
+    return await _request('GET', f'plans/?telegram_id={telegram_id}' if telegram_id else 'plans/')
 
 
 async def create_payment(telegram_id, plan, content, filename, content_type):

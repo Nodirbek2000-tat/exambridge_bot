@@ -70,6 +70,12 @@ async def account_or_prompt(message: types.Message):
     return remember(data['account'])
 
 
+def account_label(account):
+    """'Ali Valiyev · ali@gmail.com' — saytdagi akkaunt, o'quvchi taniydigan ko'rinishda."""
+    parts = [account.get('full_name'), account.get('email')]
+    return ' · '.join(escape(p) for p in dict.fromkeys(p for p in parts if p)) or '—'
+
+
 def account_text(account):
     lines = ["👤 <b>Hisobim</b>", ""]
     lines.append(f"Ism: {escape(account.get('full_name') or '—')}")
@@ -85,18 +91,22 @@ def account_text(account):
 
 
 async def send_plans(message: types.Message, account=None):
-    """Tariflar ro'yxati va tanlash tugmalari. Premium bo'lsa — avval uning holati."""
-    account = account or _accounts.get(message.chat.id)
-    if account and account.get('is_premium') and not account.get('premium_until'):
-        await message.answer(
-            "✅ <b>Sizda muddatsiz Premium bor</b> — hamma narsa ochiq, to'lov shart emas.",
-            reply_markup=menu_for(message.chat.id),
-        )
-        return
+    """Tariflar ro'yxati va tanlash tugmalari. Premium bo'lsa — avval uning holati.
+
+    Premium qaysi akkauntga ochilishini sayt aytadi (for_account): saytdagi
+    «Pay via Telegram» orqali tanlangan akkaunt yoki shu Telegramning o'zi.
+    """
     try:
-        data = await api.plans()
+        data = await api.plans(message.chat.id)
     except api.ApiError:
         await message.answer(SERVER_ERROR)
+        return
+    account = data.get('for_account') or account or _accounts.get(message.chat.id)
+    if account and account.get('is_premium') and not account.get('premium_until'):
+        await message.answer(
+            "✅ <b>Bu akkauntda muddatsiz Premium bor</b> — hamma narsa ochiq, to'lov shart emas.",
+            reply_markup=menu_for(message.chat.id),
+        )
         return
     if not data.get('accepting'):
         await message.answer(
@@ -108,15 +118,17 @@ async def send_plans(message: types.Message, account=None):
     rows = '\n'.join(f"• <b>{plan_title(p['months'])}</b> — {money(p['price'])} so'm" for p in plans)
     if account and account.get('is_premium'):
         header = (
-            f"✅ <b>Sizda Premium faol</b> — {premium_until_text(account)}.\n\n"
+            f"✅ <b>Bu akkauntda Premium faol</b> — {premium_until_text(account)}.\n\n"
             "Muddatni uzaytirish uchun tarif tanlang — yangi kunlar hozirgisining ustiga qo'shiladi.\n\n"
         )
     else:
         header = ""
+    who = f"👤 Akkaunt: <b>{account_label(account)}</b>\n\n" if account else ""
     text = (
         header
         + "💎 <b>ExamBridge Premium</b>\n\n"
-        "Premium bilan ochiladi:\n"
+        + who
+        + "Premium bilan ochiladi:\n"
         "• barcha IELTS, CEFR va SAT premium mock testlari\n"
         "• Speaking va Writing — AI band bahosi bilan\n"
         "• haqiqiy formatdagi to'liq mock imtihonlar\n"

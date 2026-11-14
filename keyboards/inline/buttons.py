@@ -36,6 +36,13 @@ def plans_keyboard(plans):
     return kb
 
 
+def pay_account_keyboard(token):
+    return InlineKeyboardMarkup(row_width=1).add(
+        InlineKeyboardButton('✅ Ha, shu akkauntga', callback_data=f'paycf:ok:{token}'),
+        InlineKeyboardButton("❌ Yo'q, bekor qilish", callback_data='paycf:no'),
+    )
+
+
 def url_button(text, url):
     return InlineKeyboardMarkup().add(InlineKeyboardButton(text, url=url))
 

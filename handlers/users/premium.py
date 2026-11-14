@@ -13,7 +13,7 @@ from states.forms import PaymentForm
 from utils import api
 from utils.misc import rate_limit
 
-from .common import SERVER_ERROR, account_or_prompt, menu_for, send_plans
+from .common import SERVER_ERROR, account_label, account_or_prompt, menu_for, send_plans
 
 MAX_RECEIPT_BYTES = 10 * 1024 * 1024
 DOC_TYPES = {
@@ -104,7 +104,8 @@ async def _submit(message: types.Message, state: FSMContext, content, filename, 
     await message.answer(
         f"✅ <b>Chekingiz qabul qilindi!</b> (№{res['id']})\n\n"
         f"Tarif: {plan_title(res['months'])} — {money(res['amount'])} so'm\n"
-        "Admin tekshirgach, Premium avtomatik ochiladi va sizga shu yerda xabar keladi. "
+        + (f"👤 Akkaunt: <b>{account_label(res['account'])}</b>\n" if res.get('account') else '')
+        + "Admin tekshirgach, Premium shu akkauntda avtomatik ochiladi va sizga shu yerda xabar keladi. "
         "Odatda bu ko'p vaqt olmaydi.\n\n"
         f"Savol bo'lsa: @{SUPPORT_USERNAME}",
         reply_markup=menu_for(message.from_user.id),
